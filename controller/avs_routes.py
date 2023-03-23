@@ -268,3 +268,49 @@ def update_address(address_id):
     return jsonify({'message': 'Database error: {}'.format(str(e))}), 500
   except Exception as e:
     return jsonify({'message': 'Error updating address', 'error': str(e)}), 500
+
+
+# --------------------------------------  DELETE ENDPOINT /api/v1/address/<address_id> ---------------------------------------------
+
+@avs_routes.route("/api/v1/address/<address_id>", methods=["DELETE"])
+@limiter.limit('3/hour')
+def delete_address(address_id):
+  '''
+    @Description DELETE /api/v1/address/<address_id>
+        @Param address_id: ReferenceId | ObjectId
+        checks if the address_id is a valid ObjectId and use it to delete the address if it's valid. 
+        Otherwise delete document with referencei if provided.
+  '''
+  successful_deletion_message = {
+    'message': 'Address deleted successfully',
+    'time_deleted': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    'status': 'success'
+  }
+
+  if ObjectId.is_valid(address_id):
+    query = {'_id': ObjectId(address_id)}
+  else:
+    query = {'referenceId': int(address_id)}
+
+  # check if address exists in the database
+  if collection.count_documents(query) == 0:
+    return jsonify({'message': 'Address not found'}), 404
+
+  # delete document(address)
+  try:
+    _document = collection.find_one(query)
+    successful_deletion_message['deleted_address'] = _document
+    successful_deletion_message['deleted_address']['_id'] = str(successful_deletion_message['deleted_address']['_id'])
+    db_query_result = collection.delete_one(query)
+
+    if db_query_result.deleted_count == 1:
+      return jsonify(successful_deletion_message), 200
+    else:
+      return jsonify({'message': 'Error deleting address'}), 500
+
+  except PyMongoError as e:
+    return jsonify({'message': 'Database error: {}'.format(str(e))}), 500
+  except Exception as e:
+    return jsonify({'message': 'Error deleting address', 'error': str(e)}), 500
+  
+  
