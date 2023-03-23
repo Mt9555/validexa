@@ -1,0 +1,1 @@
+web: chmod +x prod.sh && ./prod.sh
