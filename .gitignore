@@ -1,0 +1,29 @@
+# Python virtual environment
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.python-version
+
+# Build artifacts
+*.so
+*.dll
+*.pyd
+
+# dotenv
+.env
+*.env
+
+# virtualenv
+.venv/
+venv/
+ENV/
+
+# misc files
+notes.txt
+note.txt
+privt.txt
+address.txt
