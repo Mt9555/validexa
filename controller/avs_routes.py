@@ -17,7 +17,7 @@ avs_routes = Blueprint('avs_routes', __name__)
 
 # TODO: Authentication - Authorization - Features as per instruction
 
-''' --------------------------------------  GET ENDPOINT /api/v1/verify --------------------------------------------- '''
+''' --------------------------------------  POST ENDPOINT /api/v1/verify --------------------------------------------- '''
 
 @avs_routes.route('/api/v1/verify', methods=['POST'])
 @limiter.limit('30/hour') # limit request to 30 per hr for now
@@ -273,7 +273,7 @@ def update_address(address_id):
 # --------------------------------------  DELETE ENDPOINT /api/v1/address/<address_id> ---------------------------------------------
 
 @avs_routes.route("/api/v1/address/<address_id>", methods=["DELETE"])
-@limiter.limit('3/hour')
+@limiter.limit('2/hour')
 def delete_address(address_id):
   '''
     @Description DELETE /api/v1/address/<address_id>
