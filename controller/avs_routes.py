@@ -176,3 +176,50 @@ def get_list_of_addresses():
     return jsonify({'message': str(e)}), 500
 
 
+''' --------------------------------------  POST ENDPOINT /api/v1/address/ --------------------------------------------- '''
+
+@avs_routes.route('/api/v1/address', methods=['POST'])
+@limiter.limit('5/hour')
+def create_new_address():
+  '''
+    @Description POST /api/v1/address
+        Validates the input using the 'Marshmallow' library, checks whether the address already exists in the database, 
+        and inserts the new address into the database, returns newly created address and a timestamp of creation. 
+  '''
+  client_data = request.get_json()
+
+  # Check if address already exists in collection
+  if collection.count_documents(client_data) > 0:
+    return jsonify({
+      'message': 'Address already exists',
+      'address': client_data,
+      'status': 'failure'
+    }), 409
+  
+  try:
+    # Validate the address data using Marshmallow (security)
+    address_schema = AddressSchema()
+    errors = address_schema.validate(client_data)
+
+    if errors:
+      return jsonify({'message': 'Invalid address data', 'errors': errors}), 400
+    # Insert the new address into the database
+    result = collection.insert_one(client_data)
+
+    # Return the response with the new address data and status code 201 (Created)
+    new_address = collection.find_one({'_id': result.inserted_id})
+    new_address['_id'] = str(new_address['_id'])
+
+    client_success_response = {
+      "time_created": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+      "newly_created_address": new_address,
+      'status': 'success'
+    }
+    return jsonify(client_success_response), 201
+
+  except PyMongoError as e:
+    return jsonify({'message': 'Database error: {}'.format(str(e))}), 500
+  except Exception as e:
+    return jsonify({'message': 'Internal Server Error', 'error': str(e)}), 500
+
+
