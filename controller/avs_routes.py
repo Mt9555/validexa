@@ -223,3 +223,48 @@ def create_new_address():
     return jsonify({'message': 'Internal Server Error', 'error': str(e)}), 500
 
 
+# --------------------------------------  UPDATE ENDPOINT /api/v1/address/<address_id> ---------------------------------------------
+
+@avs_routes.route("/api/v1/address/<address_id>", methods=["PUT"])
+@limiter.limit('3/hour')
+def update_address(address_id):
+  '''
+    @Description PUT - update address - modify existing resources /api/v1/address/<address_id>
+    @param address_id: reference_id
+        If the address is not found, it returns a 404 error message. If the address is found, 
+        it updates the fields and returns a message with old and new addresses.
+  '''
+  client_data = request.get_json()
+  query = {'referenceId': int(address_id)}
+  # check if address exists in the database
+  db_query_result = collection.find_one(query)
+
+  if db_query_result is None:
+    return jsonify({
+      'message': 'Address not found',
+      'address_id': address_id
+    }), 404
+
+  try:
+    old_address = db_query_result
+    # update the address fields
+    collection.update_one(query, {'$set': client_data})
+    updated_address = collection.find_one(query)
+
+    succesful_update_message = {
+      'message': 'Address Updated successfully',
+      'time_updated': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+      'status': 'success',
+      'old_address': old_address,
+      'new_address': updated_address
+    }
+    # ObjectId not serializable: convert the ObjectId to string
+    succesful_update_message['old_address']['_id'] = str(succesful_update_message['old_address']['_id'])
+    succesful_update_message['new_address']['_id'] = str(succesful_update_message['new_address']['_id'])
+
+    return jsonify(succesful_update_message), 200
+
+  except PyMongoError as e:
+    return jsonify({'message': 'Database error: {}'.format(str(e))}), 500
+  except Exception as e:
+    return jsonify({'message': 'Error updating address', 'error': str(e)}), 500
