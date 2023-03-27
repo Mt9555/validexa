@@ -12,6 +12,9 @@ client = MongoClient(f"mongodb+srv://{DB_USERNAME}:{DB_PASS}@cluster1.bztqi43.mo
 db = client['avs_db']
 collection = db['addresses']
 
+# text index for search
+collection.create_index([('addressLine1', 'text')])
+
 address_schema = {
   'addressLine1': str,
   'addressLine2': str,
