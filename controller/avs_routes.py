@@ -44,7 +44,6 @@ def verify_address():
     If the verification is unsuccessful, the `address` field contains the original address data submitted by the client.
   """
   try:
-    # Get the client data from the request
     client_data = request.get_json()
 
     # Validate the address data using Marshmallow library
@@ -56,7 +55,6 @@ def verify_address():
       return jsonify({'message': 'Invalid address data, please check your input', 'errors': error}), 400
 
     # handle case sensitivity
-    # $regex operator in MongoDB to perform a regular expression search on the addressLine1 field.
     address_line1_pattern = re.compile(re.escape(client_data['addressLine1']), re.IGNORECASE)
     db_query = {
       'addressLine1': {'$regex' : address_line1_pattern},
@@ -174,7 +172,7 @@ def get_list_of_addresses():
       limit (int): limit the number of results returned
       format (str): specify the output format, either JSON or CSV
 
-    Returns:
+    Return:
         JSON object containing a list of addresses if the request was successful
         CSV data if the 'format' query parameter was set to 'csv'
     """
@@ -273,7 +271,6 @@ def get_list_of_addresses():
 @limiter.limit('5/hour')
 def create_new_address():
   '''
-    Description: 
       POST - Create new address - new resource /api/v1/address
 
       Uses the 'Marshmallow' library to validate the input. It checks whether the address already exists in the database 
@@ -333,7 +330,7 @@ def update_address(address_id):
     Params:
       - address_id : ReferenceId: The unique reference ID of the address resource to be updated.
       
-    Returns:
+    Return:
       - If the specified address resource is not found, a 404 error message is returned.
       - If the specified address resource is found, it is updated using the $set operator and a message is returned with the old and new addresses.
   """
@@ -385,10 +382,13 @@ def update_address(address_id):
 @limiter.limit('3/hour')
 def delete_address(address_id):
   """
-    Description: DELETE - delete address - remove existing resources at /api/v1/address/:address_id
-    Param: address_id - can be either a valid ObjectId or a ReferenceId
-    If the address_id is a valid ObjectId, it deletes the corresponding address document. Otherwise, 
-    it deletes the document with the provided ReferenceId.
+    delete record (address) - remove existing resource at /api/v1/address/:address_id
+
+    Param: 
+      address_id - can be either a valid ObjectId or a ReferenceId
+
+    If the address_id is a valid ObjectId, it deletes the corresponding address document. 
+    Otherwise, it deletes the document with the provided ReferenceId.
   """
 
   successful_deletion_message = {
