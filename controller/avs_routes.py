@@ -12,6 +12,7 @@ from io import StringIO
 from bson import ObjectId
 import random
 import csv
+import re
 
 avs_routes = Blueprint('avs_routes', __name__)
 
@@ -50,19 +51,23 @@ def verify_address():
     address_schema = AddressSchema()
     error = address_schema.validate(client_data)
 
+    # If the address data is invalid, return an error response
     if error:
-      return jsonify({'message': 'Invalid address data', 'errors': error}), 400
+      return jsonify({'message': 'Invalid address data, please check your input', 'errors': error}), 400
 
+    # handle case sensitivity
+    # $regex operator in MongoDB to perform a regular expression search on the addressLine1 field.
+    address_line1_pattern = re.compile(re.escape(client_data['addressLine1']), re.IGNORECASE)
     db_query = {
-      'addressLine1': client_data['addressLine1'],
+      'addressLine1': {'$regex' : address_line1_pattern},
       'addressLine2': client_data.get('addressLine2', None),
-      'city': client_data['city'],
-      'stateProv': client_data['stateProv'],
+      'city': client_data['city'].title(),
+      'stateProv': client_data['stateProv'].upper(),
       '$or': [
         {'postalCode': client_data['postalCode']},
         {'postalCode': {'$regex': client_data['postalCode'][:5]}}
       ],
-      'country': client_data['country']
+      'country': client_data['country'].upper()
     }
     
     # query db
@@ -74,14 +79,14 @@ def verify_address():
 
         reference_id = VALID_ADDRESS['referenceId']
         client_addressLine1 = client_data['addressLine1'].split(' ')
-
+        
         # Replace address line abbreviations "4500 Due W Rd NW"
         for idx, word in enumerate(client_addressLine1):
           if word.lower() in misc_abbreviation:
             client_addressLine1[idx] = misc_abbreviation[word.lower()]
 
         client_data['addressLine1'] = ' '.join(client_addressLine1)
-        recommendations['addressLine1'] = client_data['addressLine1']
+        recommendations['addressLine1'] = client_data['addressLine1'].title()
 
         if len(client_data['postalCode']) == 5:
           # generate random numbers for the last four digits for now
@@ -106,9 +111,9 @@ def verify_address():
         if client_data["country"].upper() == 'US':
           recommendations['country'] = 'USA'
         else:
-          recommendations['country'] = client_data['country']
+          recommendations['country'] = client_data['country'].upper()
 
-        recommendations['city'] = client_data['city']
+        recommendations['city'] = client_data['city'].title()
         recommendations['addressLine2'] = client_data.get('addressLine2', None) 
 
         response = {
@@ -139,6 +144,7 @@ def verify_address():
     return jsonify({'error': f'Database error: {str(e)}'}), 500
   except Exception as e:
     return jsonify({'error': f'Error: {str(e)}'}), 500
+
 
 
 ######################################################
