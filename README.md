@@ -59,7 +59,7 @@ make clean: This command will delete the virtual environment and all its depende
 
 ## Project Structure
 
-- **controller**: contains the `avs_routes.py` file, which handles requests and, process them, and generates responses.
+- **routes**: contains the `avs_routes.py` file, which handles requests and, process them, and generates responses.
 
 - **db**: contains the `connection.py` file, which provides configuration details and establishes a connection to a MongoDB Atlas database.
 

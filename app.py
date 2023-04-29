@@ -3,7 +3,7 @@ load_dotenv()
 
 import os
 from flask import Flask
-from controller.avs_routes import avs_routes
+from routes.avs_routes import avs_routes
 from utils.limiter import limiter
 
 app = Flask(__name__)

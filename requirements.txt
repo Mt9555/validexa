@@ -22,3 +22,7 @@ rich==13.3.2
 typing_extensions==4.5.0
 Werkzeug==2.2.3
 wrapt==1.15.0
+python-Levenshtein==0.20.9
+rapidfuzz==2.15.1
+Levenshtein==0.20.9
+fuzzywuzzy==0.18.0
