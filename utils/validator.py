@@ -15,8 +15,6 @@ def validate_addressLine_1(value):
     raise ValidationError('Field cannot be empty')
   if len(value.split()) < 2:
     raise ValidationError('Invalid addressLine1')
-  # if re.search(r'[^a-zA-Z0-9 ]', value):
-  #   raise ValidationError('Invalid characters in addressLine1')
     
 class AddressSchema(Schema):
   addressLine1 = fields.Str(required=True, validate=[validate_not_empty, validate_addressLine_1])

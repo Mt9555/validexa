@@ -13,20 +13,10 @@ from bson import ObjectId
 from functools import wraps
 from fuzzywuzzy import fuzz
 import copy
-import random
 import csv
 import re
 
 avs_routes = Blueprint('avs_routes', __name__)
-
-
-# TODO:
-# error messages logging (file or logging service for debugging and troubleshooting).
-# caching
-# load balancing
-# real-time validation API, using services such as Google Maps or UPS
-# support for multiple languages
-# Important ---- CLEAN Up,, REFACTOR!!!
 
 
 @avs_routes.route('/api/v1/auth', methods=['GET'])
@@ -34,8 +24,6 @@ avs_routes = Blueprint('avs_routes', __name__)
 def generate_token():
   client_ip = request.remote_addr
   time_generated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-  # Check if the client already has an API key
   existing_key = api_key_collection.find_one({'client_ip': client_ip})
 
   if existing_key:
@@ -45,10 +33,8 @@ def generate_token():
     }
     return jsonify(msg), 400
 
-  # Generate a new API key
   api_key = generate_api_key()
 
-  # Insert a new document into the api_keys collection
   api_key_collection.insert_one({
     'api_key': api_key,
     'client_ip': client_ip,
@@ -61,8 +47,6 @@ def generate_token():
   }
   return jsonify(msg), 200
 
-#--- 1c5a130f87edb67aa5f83477f9fea950fe79f34522cf42eda8070f827f86ac96
-
 # decorator func ---->>>>>>> 
 def require_api_key(func):
   @wraps(func)
@@ -70,7 +54,6 @@ def require_api_key(func):
     '''
       Functionality:
       Check presence of API KEY in request header before authenticating
-
     '''
     api_key = request.headers.get('Authorization')
     # print('-- API kEY', api_key)
@@ -84,7 +67,6 @@ def require_api_key(func):
     if not api_key:
       return jsonify(error_message), 401
 
-    # Check if the API key exists in the collection
     if not api_key_collection.find_one({'api_key': api_key}):
       error_message = {
         "error": 'Invalid API key - Unauthorized access',
@@ -96,12 +78,6 @@ def require_api_key(func):
     return func(*args, **kwargs)
 
   return validate_api_key
-
-
-def generate_reference_id():
-  # Generate a random integer between 20001 and 99999
-  reference_id = random.randint(20001, 99999)
-  return reference_id
 
 
 @avs_routes.route('/api/v1/verify', methods=['POST'])
@@ -116,25 +92,18 @@ def verify_address():
     if not isinstance(client_data.get('addressLine1'), str):
       return jsonify({'error': 'Invalid addressLine1 Input'}), 400
 
-    # Validate the address data - Marshmallow
     address_schema = AddressSchema()
     error = address_schema.validate(client_data)
 
-    # If the address data is invalid, return an error
     if error:
       return jsonify({'message': 'Invalid address data, please check your input', 'errors': error}), 400
 
-    # handle case sensitivity
     escaped_address_line1 = re.escape(client_data['addressLine1'])
     address_line1_pattern = re.compile(r'\b[a-zA-Z0-9]+\b', re.IGNORECASE)
-
-    # pattern to extract the valid words
     valid_word = address_line1_pattern.findall(escaped_address_line1)
     processed_address_line1 = " ".join(valid_word)
 
     # print('test-----', processed_address_line1)
-
-    
     country = client_data['country'].upper()
     possible_ = ['UNITED STATE', 'UNITED STATES', 'US', 'USA']
     country = 'US' if country in possible_ else country
@@ -142,10 +111,6 @@ def verify_address():
     client_state = client_data['stateProv']
     state_character_over2 = len(client_state) > 2
     processed_state_prov = state_names.get(client_state.title(), None) if state_character_over2 else client_state.upper()
-
-    # $regex operator in MongoDB to perform a regular expression search on the addressLine1 field.
-
-    # address_line_2 = client_data.get('addressLine2', None) if client_data.get('addressLine2') else None
     
     db_query = {
       'addressLine1': {'$regex' : processed_address_line1, '$options': 'i'},
@@ -159,17 +124,11 @@ def verify_address():
       'country': country
     }
 
-    # query db
     VALID_ADDRESS = collection.find_one(db_query, {'_id': 0})
 
     if VALID_ADDRESS:
         # dictionary to store recommendations
         recommendations = {}
-
-        # reference_id = VALID_ADDRESS.get('referenceId')
-        # if reference_id is None:
-        #   reference_id = None
-
         client_addressLine1 = VALID_ADDRESS.get('addressLine1').split(' ')
         
         # Replace address line abbreviations "4500 Due W Rd NW"
@@ -181,8 +140,6 @@ def verify_address():
         recommendations['addressLine1'] = client_data['addressLine1'].upper()
 
         if len(client_data['postalCode']) == 5:
-          # generate random numbers for the last four digits for now
-          #last_four_digits = str(random.randint(0, 9999)).zfill(4)
           # TODO: integrate with postgrid api for the last four
           postal_code = VALID_ADDRESS.get('postalCode')
           if postal_code:
@@ -192,9 +149,6 @@ def verify_address():
         else:
           recommendations['postalCode'] = client_data['postalCode']
 
-        # if reference_id:
-        #   recommendations['referenceId'] = reference_id
-
         # Recommend abbreviated state name if fully typed out
         if client_data["stateProv"].title() in state_names:
           recommended_abbreviated_state_name = state_names[client_data["stateProv"].title()]
@@ -202,7 +156,7 @@ def verify_address():
         else:
           recommendations['stateProv'] = client_data['stateProv'].upper()
 
-        # only US addresses in the db for now
+        # only US addresses
         client_country = client_data["country"].upper()
         recommendations['country'] = 'US' if client_country in possible_ else client_country.upper()
 
@@ -224,10 +178,7 @@ def verify_address():
         if no_recommendation_q_val and no_recommendation_q_val.lower() == 'f':
           response["avsAddressDetails"].pop("recommendedAddresses")
     else:
-      # dictionary to store recommendations
       failed_address_recommendation = {}
-
-      # Query the database with a fuzzy match
       db_query = {
         '$text': {'$search': client_data['addressLine1'] or None},
         'country': country
@@ -266,12 +217,8 @@ def verify_address():
 
         clientaddress_line_1 = ' '.join(address_line_1)
 
-
         failed_address_recommendation['addressLine1'] = clientaddress_line_1.upper()
         failed_address_recommendation['postalCode'] = near_match[0]['postalCode']
-
-        # if reference_id:
-        #   failed_address_recommendation['referenceId'] = reference_id
 
         stateProv = near_match[0]['stateProv']
         country_code = near_match[0]['country']
@@ -309,20 +256,13 @@ def verify_address():
 
 
 
-
-
-
 ######################################################
 #   *    **  * ***  ****  ******  **** * **    **    #
 #   ***   **   **  **   **   **   **  ***  **** ******
 ######################################################
 
 
-
-
-
-
-# --------------------------------------  GET ENDPOINT /api/v1/addresses---------------------------------------------
+# --------------------------------------  GET /api/v1/addresses---------------------------------------------
 
 
 '''
@@ -367,7 +307,6 @@ def get_list_of_addresses():
         Error messages if there was an error with the request, such as an invalid query parameter or a database error
     """
   try:
-    # get query parameters from request
     city = request.args.get('city')
     stateProv = request.args.get('stateprov')
     postalCode = request.args.get('postalcode')
@@ -403,7 +342,6 @@ def get_list_of_addresses():
     if search:
       query['$text'] = {'$search': search}
 
-    # Add sorting if 'sort' query parameter is present
     sort_key = None
     if sort:
       if sort.lower() == 'city':
@@ -459,7 +397,7 @@ def get_list_of_addresses():
     return jsonify({'message': str(e)}), 500
 
 
-# --------------------------------------  POST ENDPOINT /api/v1/address/ ---------------------------------------------
+# --------------------------------------  POST /api/v1/address/ ---------------------------------------------
 
 @avs_routes.route('/api/v1/address/', methods=['POST'])
 @limiter.limit('10/hour')
@@ -474,12 +412,10 @@ def create_new_address():
       and inserts the new address into the database. The response includes a newly created address and a timestamp of the creation time. 
       The endpoint is currently rate-limited to 5 requests per hour.
   ''' 
-  # Retrieve address from request
   client_data = request.get_json()
 
-  
   try:
-    # Validate the address data - Marshmallow
+    # Validate
     address_schema = AddressSchema()
     errors = address_schema.validate(client_data)
 
@@ -516,11 +452,10 @@ def create_new_address():
         "city": client_data.get("city", '').title(),
         "country": c_country,
         "postalCode": client_data.get("postalCode", None),
-        "referenceId": client_data.get("referenceId", generate_reference_id()),
+        "referenceId": client_data.get("referenceId"),
         "stateProv": c_state_prov
       }
 
-    # Insert the new address into the database
     result = collection.insert_one(data_to_store)
 
     # Return the response with the new address data and status code 201 (Created)
@@ -538,12 +473,11 @@ def create_new_address():
   except PyMongoError as e:
     return jsonify({'message': 'Database error: {}'.format(str(e))}), 500
   except Exception as e:
-    # Return a generic error response with status code 500 (Internal Server Error)
     return jsonify({'message': 'Internal Server Error', 'error': str(e)}), 500
 
 
 
-# --------------------------------------  UPDATE ENDPOINT /api/v1/address/<address_id> ---------------------------------------------
+# --------------------------------------  UPDATE /api/v1/address/:address_id ---------------------------------------------
 
 @avs_routes.route("/api/v1/address/<address_id>", methods=["PUT"])
 @limiter.limit('5/hour')
@@ -560,8 +494,6 @@ def update_address(address_id):
       - If the specified address resource is found, it is updated using the $set operator and a message is returned with the old and new addresses.
   """
   client_data = request.get_json()
-
-  # Validate the address data - Marshmallow
   address_schema = AddressSchema()
   errors = address_schema.validate(client_data)
 
@@ -569,7 +501,6 @@ def update_address(address_id):
     return jsonify({'message': 'Invalid address data', 'errors': errors}), 400
 
   query = {'referenceId': int(address_id)}
-  # check if address exists in the database
   db_query_result = collection.find_one(query)
   
   if db_query_result is None:
@@ -581,7 +512,7 @@ def update_address(address_id):
   try:
     old_address = db_query_result
 
-    # update the address fields
+    # update
     collection.update_one(query, {'$set': client_data})
 
     updated_address = collection.find_one(query)
@@ -607,7 +538,7 @@ def update_address(address_id):
 
 
 
-# --------------------------------------  DELETE ENDPOINT /api/v1/address/<address_id> ---------------------------------------------
+# --------------------------------------  DELETE /api/v1/address/:address_id ---------------------------------------------
 
 @avs_routes.route("/api/v1/addresses/<address_id>", methods=["DELETE"])
 @limiter.limit('5/hour')
@@ -631,11 +562,9 @@ def delete_address(address_id):
   else:
     query = {'referenceId': int(address_id)}
 
-  # check if address exists in the database
   if collection.count_documents(query) == 0:
     return jsonify({'message': 'Address not found'}), 404
 
-  # delete document(address)
   try:
     _document = collection.find_one(query)
     successful_deletion_message['deleted_address'] = _document
@@ -651,3 +580,4 @@ def delete_address(address_id):
     return jsonify({'message': 'Database error: {}'.format(str(e))}), 500
   except Exception as e:
     return jsonify({'message': 'Error deleting address', 'error': str(e)}), 500
+  
