@@ -18,6 +18,7 @@ def add_security_headers(response):
   response.headers["X-Frame-Options"] = "DENY"
   response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
   response.headers["Server"] = None
+  response.headers['Vary'] = 'Cookie'
   return response
 
 if __name__ == '__main__':

@@ -203,11 +203,7 @@ def verify_address():
         #near_match = fuzz.partial_ratio(client_data['addressLine1'], '2870 Clay Rd')
         #print("--- near_match", near_match)
         
-        # reference_id = near_match[0].get('referenceId')
-        # if reference_id is None:
-        #   reference_id = None
-
-        # Recommend the most similar address
+        # Recommend most similar address
         address_line_1 = near_match[0]['addressLine1'].split(' ')
         
         # Replace address line abbreviations "4500 Due W Rd NW"
@@ -429,9 +425,6 @@ def create_new_address():
         'address': client_data,
         'status': 'failure'
       }), 409
-    
-    #TODO: process {} client data before storing
-    # {"addressLine1":"1007 Tuskegee Dr", "addressLine2": null, "city": "Oak Ridge", "stateProv": "TN", "postalCode":"37830-9237", "country": "US"},
 
     c_state_prov = client_data.get("stateProv")
     if c_state_prov.title() in state_names:
