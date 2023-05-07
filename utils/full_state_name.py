@@ -48,19 +48,19 @@ state_names = {
     "Washington": "WA",
     "West Virginia": "WV",
     "Wisconsin": "WI",
-    "Wyoming": "WY"
+    "Wyoming": "WY",
 }
 
 misc_abbreviation = {
-    'north west': 'nw',
-    'south west': 'sw',
-    'road': 'rd',
-    'north east': 'ne',
-    'street': 'st',
-    'parkway': 'pkwy',
-    'drive': 'dr',
-    'lane': 'ln',
-    'avenue': 'ave'
+    "north west": "nw",
+    "south west": "sw",
+    "road": "rd",
+    "north east": "ne",
+    "street": "st",
+    "parkway": "pkwy",
+    "drive": "dr",
+    "lane": "ln",
+    "avenue": "ave",
 }
 
 us_state_capitals = {
@@ -113,5 +113,5 @@ us_state_capitals = {
     "washington": "olympia",
     "west virginia": "charleston",
     "wisconsin": "madison",
-    "wyoming": "cheyenne"
+    "wyoming": "cheyenne",
 }

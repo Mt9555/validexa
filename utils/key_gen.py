@@ -2,6 +2,7 @@ import secrets
 
 # api_key = secrets.token_urlsafe(32)
 
+
 def generate_api_key(length=32):
     """Generates a random API key of specified length.
 

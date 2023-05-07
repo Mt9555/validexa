@@ -17,6 +17,7 @@ build/
 .env
 *.env
 
+.vscode
 # virtualenv
 .venv/
 venv/
