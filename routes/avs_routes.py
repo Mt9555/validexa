@@ -21,7 +21,7 @@ avs_routes = Blueprint("avs_routes", __name__)
 
 
 @avs_routes.route("/api/v1/auth", methods=["GET"])
-@limiter.limit("15/hour")
+@limiter.limit("2/hour")
 def generate_token():
     client_ip = request.remote_addr
     time_generated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
